@@ -127,7 +127,7 @@ stages:
               subscriptionId: $(subscriptionId)
               resourceGroupName: $(resourceGroupName)
               location: $(resourceGroupLocation)
-              csmFile: 'deployment_template.json'
+              csmFile: 'py-functionapp-master/deployment_template.json'
               appName: 'pyapp-$(Environment.Name)-east-functions'
               overrideParameters: '-storageAcctName $(storageAcctName) -hostingPlanName $(hostingPlanName)'
 
