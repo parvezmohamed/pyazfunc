@@ -1,0 +1,210 @@
+# Python Function App to Linux on Azure
+# Build a Python function app and deploy it to Azure as a Linux function app.
+# Adding steps that analyze code, save build artifacts, and deploy to all environments & regions which is set to false by default
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+parameters:
+- name: DeployToDevEast
+  displayName: Deploy To Dev East?
+  type: boolean
+  default: false
+- name: DeployToDevWest
+  displayName: Deploy To Dev West?
+  type: boolean
+  default: false  
+- name: DeployToQAEast
+  displayName: Deploy To QA East?
+  type: boolean
+  default: false
+- name: DeployToQAWest
+  displayName: Deploy To QA West?
+  type: boolean
+  default: false
+- name: DeployToProdEast
+  displayName: Deploy To Prod East?
+  type: boolean
+  default: false
+- name: DeployToProdWest
+  displayName: Deploy To Prod West?
+  type: boolean
+  default: false
+  
+trigger:
+- none
+
+variables:
+- group: Platform
+- name: EAST_DEV_RESOURCE_GROUP
+  value: kmx-dev-east-edl-ingest
+- name: WEST_DEV_RESOURCE_GROUP
+  value: kmx-dev-west-edl-ingest
+- name: EAST_QA_RESOURCE_GROUP
+  value: kmx-qa-east-edl-ingest
+- name: WEST_QA_RESOURCE_GROUP
+  value: kmx-qa-west-edl-ingest 
+- name: EAST_PROD_RESOURCE_GROUP
+  value: kmx-prod-east-edl-ingest
+- name: WEST_PROD_RESOURCE_GROUP
+  value: kmx-prod-west-edl-ingest
+- name: FOLDER_NAME
+  value: "functions"
+
+  # Agent VM image name
+- name: vmImageName
+  value: 'ubuntu-latest'
+
+  # Working Directory
+- name: workingDirectory
+  value: $(Pipeline.Workspace)
+
+stages:
+- stage: Build  
+  displayName: Build stage
+
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: UsePythonVersion@0
+      displayName: "Setting python version to 3.8 as required by functions"
+      inputs:
+        versionSpec: '3.8'
+        architecture: 'x64'
+    - bash: |
+        if [ -f extensions.csproj ]
+        then
+            dotnet build extensions.csproj --output ./bin
+        fi
+        tree -a .
+        python -m pip install --upgrade pip
+        pip install --target="./functions/.python_packages/lib/site-packages" -r ./functions/requirements.txt
+        tree -a .
+    - task: ArchiveFiles@2
+      displayName: "Archive files"
+      inputs:
+        rootFolderOrFile: "$(System.DefaultWorkingDirectory)/functions"
+        includeRootFolder: false
+        archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip'
+        artifactName: 'drop'
+
+- stage: Dev
+  displayName: Dev
+  condition: or(${{parameters.DeployToDevEast}},${{parameters.DeployToDevWest}})    
+  dependsOn: Build
+
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'dev'
+    pool:
+      vmImage: $(vmImageName)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - task: AzureFunctionApp@1
+            condition: ${{parameters.DeployToDevEast}}          
+            displayName: 'Deploy to East'
+            inputs:
+              azureSubscription: 'edlsubscriptiondevazuredevops.com'
+              appType: functionAppLinux
+              appName: 'edl-ingest-$(Environment.Name)-east-functions'
+              package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
+              deployToSlotOrASE: true
+              slotName: staging
+
+
+          - task: AzureFunctionApp@1
+            condition: ${{parameters.DeployToDevWest}}          
+            displayName: 'Deploy to West'
+            inputs:
+              azureSubscription: 'edlsubscriptiondevazuredevops.com'
+              appType: functionAppLinux
+              appName: 'edl-ingest-$(Environment.Name)-west-functions'
+              package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
+              deployToSlotOrASE: true
+              slotName: staging
+
+- stage: QA
+  displayName: QA
+  condition: or(${{parameters.DeployToQAEast}},${{parameters.DeployToQAWest}})    
+  dependsOn: Build
+
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'qa'
+    pool:
+      vmImage: $(vmImageName)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - task: AzureFunctionApp@1
+            condition: ${{parameters.DeployToQAEast}}          
+            displayName: 'Deploy to East'
+            inputs:
+              azureSubscription: 'edlsubscriptionqaazuredevops.com'
+              appType: functionAppLinux
+              appName: 'edl-ingest-$(Environment.Name)-east-functions'
+              package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
+              deployToSlotOrASE: true
+              slotName: staging
+
+          - task: AzureFunctionApp@1
+            condition: ${{parameters.DeployToQAWest}}          
+            displayName: 'Deploy to West'
+            inputs:
+              azureSubscription: 'edlsubscriptionqaazuredevops.com'
+              appType: functionAppLinux
+              appName: 'edl-ingest-$(Environment.Name)-west-functions'
+              package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
+
+- stage: Prod
+  displayName: Prod
+  condition: or(${{parameters.DeployToProdEast}},${{parameters.DeployToProdWest}})    
+  dependsOn: Build
+
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'prod'
+    pool:
+      vmImage: $(vmImageName)
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+          - task: AzureFunctionApp@1
+            condition: ${{parameters.DeployToProdEast}}          
+            displayName: 'Deploy to East'
+            inputs:
+              azureSubscription: 'edlsubscriptionprodazuredevops.com'
+              appType: functionAppLinux
+              appName: 'edl-ingest-$(Environment.Name)-east-functions'
+              package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
+              deployToSlotOrASE: true
+              slotName: staging
+
+          - task: AzureFunctionApp@1
+            condition: ${{parameters.DeployToProdWest}}          
+            displayName: 'Deploy to West'
+            inputs:
+              azureSubscription: 'edlsubscriptionprodazuredevops.com'
+              appType: functionAppLinux
+              appName: 'edl-ingest-$(Environment.Name)-west-functions'
+              package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
