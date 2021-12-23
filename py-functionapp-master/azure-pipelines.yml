@@ -35,17 +35,17 @@ trigger:
 variables:
 - group: Platform
 - name: EAST_DEV_RESOURCE_GROUP
-  value: kmx-dev-east-edl-ingest
+  value: CarMax
 - name: WEST_DEV_RESOURCE_GROUP
-  value: kmx-dev-west-edl-ingest
+  value: CarMax
 - name: EAST_QA_RESOURCE_GROUP
-  value: kmx-qa-east-edl-ingest
+  value: CarMax
 - name: WEST_QA_RESOURCE_GROUP
-  value: kmx-qa-west-edl-ingest 
+  value: CarMax 
 - name: EAST_PROD_RESOURCE_GROUP
-  value: kmx-prod-east-edl-ingest
+  value: CarMax
 - name: WEST_PROD_RESOURCE_GROUP
-  value: kmx-prod-west-edl-ingest
+  value: CarMax
 - name: FOLDER_NAME
   value: "functions"
 
@@ -114,9 +114,9 @@ stages:
             condition: ${{parameters.DeployToDevEast}}          
             displayName: 'Deploy to East'
             inputs:
-              azureSubscription: 'edlsubscriptiondevazuredevops.com'
+              azureSubscription: 'azfunc'
               appType: functionAppLinux
-              appName: 'edl-ingest-$(Environment.Name)-east-functions'
+              appName: 'pyapp-$(Environment.Name)-east-functions'
               package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
               deployToSlotOrASE: true
               slotName: staging
@@ -126,9 +126,9 @@ stages:
             condition: ${{parameters.DeployToDevWest}}          
             displayName: 'Deploy to West'
             inputs:
-              azureSubscription: 'edlsubscriptiondevazuredevops.com'
+              azureSubscription: 'azfunc'
               appType: functionAppLinux
-              appName: 'edl-ingest-$(Environment.Name)-west-functions'
+              appName: 'pyapp-$(Environment.Name)-west-functions'
               package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
               deployToSlotOrASE: true
               slotName: staging
@@ -155,9 +155,9 @@ stages:
             condition: ${{parameters.DeployToQAEast}}          
             displayName: 'Deploy to East'
             inputs:
-              azureSubscription: 'edlsubscriptionqaazuredevops.com'
+              azureSubscription: 'azfunc'
               appType: functionAppLinux
-              appName: 'edl-ingest-$(Environment.Name)-east-functions'
+              appName: 'pyapp-$(Environment.Name)-east-functions'
               package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
               deployToSlotOrASE: true
               slotName: staging
@@ -166,9 +166,9 @@ stages:
             condition: ${{parameters.DeployToQAWest}}          
             displayName: 'Deploy to West'
             inputs:
-              azureSubscription: 'edlsubscriptionqaazuredevops.com'
+              azureSubscription: 'azfunc'
               appType: functionAppLinux
-              appName: 'edl-ingest-$(Environment.Name)-west-functions'
+              appName: 'pyapp-$(Environment.Name)-west-functions'
               package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
 
 - stage: Prod
@@ -193,9 +193,9 @@ stages:
             condition: ${{parameters.DeployToProdEast}}          
             displayName: 'Deploy to East'
             inputs:
-              azureSubscription: 'edlsubscriptionprodazuredevops.com'
+              azureSubscription: 'azfunc'
               appType: functionAppLinux
-              appName: 'edl-ingest-$(Environment.Name)-east-functions'
+              appName: 'pyapp-$(Environment.Name)-east-functions'
               package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
               deployToSlotOrASE: true
               slotName: staging
@@ -204,7 +204,7 @@ stages:
             condition: ${{parameters.DeployToProdWest}}          
             displayName: 'Deploy to West'
             inputs:
-              azureSubscription: 'edlsubscriptionprodazuredevops.com'
+              azureSubscription: 'azfunc'
               appType: functionAppLinux
-              appName: 'edl-ingest-$(Environment.Name)-west-functions'
+              appName: 'pyapp-$(Environment.Name)-west-functions'
               package: '$(Pipeline.Workspace)/drop/build$(Build.BuildId).zip'
