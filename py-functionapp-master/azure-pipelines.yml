@@ -128,8 +128,7 @@ stages:
               resourceGroupName: $(resourceGroupName)
               location: $(resourceGroupLocation)
               csmFile: 'py-functionapp-master/deployment_template.json'
-              appName: 'pyapp-$(Environment.Name)-east-functions'
-              overrideParameters: '-storageAcctName $(storageAcctName) -hostingPlanName $(hostingPlanName)'
+              overrideParameters: '-appName $(appName) -storageAcctName $(storageAcctName) -hostingPlanName $(hostingPlanName)'
 
           - task: AzureFunctionApp@1
             condition: ${{parameters.DeployToDevEast}}          
